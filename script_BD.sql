@@ -5,6 +5,25 @@
  USE Plataforma_de_vendas_de_jogos_online;
 
 -- -----------------------------------------------------
+-- Tabela Jogo
+-- -----------------------------------------------------
+CREATE TABLE Jogo (
+
+  idJogo INT NOT NULL,
+  Descrição VARCHAR(45) NOT NULL,
+  Titulo VARCHAR(45) NOT NULL,
+  Categoria VARCHAR(45) NOT NULL,
+  Data_Lancamento DATE NOT NULL,
+  Capa BLOB NULL,
+  Processador VARCHAR(45) NOT NULL,
+  Memoria_RAM VARCHAR(45) NOT NULL,
+  Placa_de_Vídeo VARCHAR(45) NOT NULL,
+  Armazenamento VARCHAR(45) NOT NULL,
+  PRIMARY KEY (idJogo)
+);
+
+
+-- -----------------------------------------------------
 -- Tabela Biblioteca_de_Jogos
 -- -----------------------------------------------------
 CREATE TABLE Biblioteca_de_Jogos (
@@ -21,10 +40,28 @@ CREATE TABLE Biblioteca_de_Jogos (
 CREATE TABLE Perfil_Usuário (
 
   idPerfil_Usuário INT NOT NULL,
-  Foto_perfil BLOB NOT NULL,
+  Foto_perfil BLOB NULL,
   Biografia VARCHAR(45) NOT NULL,
   Localização VARCHAR(45) NOT NULL,
   PRIMARY KEY (idPerfil_Usuário)
+);
+
+
+-- -----------------------------------------------------
+-- Tabela Loja
+-- -----------------------------------------------------
+CREATE TABLE Loja (
+
+  idLoja INT NOT NULL,
+  Preço VARCHAR(45) NOT NULL,
+  ID_Jogo INT NOT NULL,
+  PRIMARY KEY (idLoja),
+  
+  CONSTRAINT Chave_Estrangeira_Loja_Jogo
+    FOREIGN KEY (ID_Jogo)
+    REFERENCES Jogo (idJogo)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
 );
 
 
@@ -36,7 +73,14 @@ CREATE TABLE Carrinho_de_Compras (
   idCarrinho_de_Compras INT NOT NULL,
   Data_de_Adição DATE NOT NULL,
   Quantidade INT NOT NULL,
-  PRIMARY KEY (idCarrinho_de_Compras)
+  ID_Loja INT NOT NULL,
+  PRIMARY KEY (idCarrinho_de_Compras),
+  
+  CONSTRAINT Chave_Estrangeira_Carrinho_de_Compras_Loja
+    FOREIGN KEY (ID_Loja)
+    REFERENCES Loja (idLoja)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
 );
 
 
@@ -70,26 +114,8 @@ CREATE TABLE Usuário (
     FOREIGN KEY (ID_Carrinho_de_Compras)
     REFERENCES Carrinho_de_Compras (idCarrinho_de_Compras)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION);
-
-
--- -----------------------------------------------------
--- Tabela Jogo
--- -----------------------------------------------------
-CREATE TABLE Jogo (
-
-  idJogo INT NOT NULL,
-  Descrição VARCHAR(45) NOT NULL,
-  Titulo VARCHAR(45) NOT NULL,
-  Categoria VARCHAR(45) NOT NULL,
-  Data_Lancamento DATE NOT NULL,
-  Capa BLOB NOT NULL,
-  Processador VARCHAR(45) NOT NULL,
-  Memoria_RAM VARCHAR(45) NOT NULL,
-  Placa_de_Vídeo VARCHAR(45) NOT NULL,
-  Armazenamento VARCHAR(45) NOT NULL,
-  PRIMARY KEY (idJogo)
-);
+    ON UPDATE NO ACTION
+    );
 
 
 -- -----------------------------------------------------
@@ -299,4 +325,4 @@ CREATE TABLE Pagamento (
     REFERENCES Carrinho_de_Compras (idCarrinho_de_Compras)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION
-);
+)
