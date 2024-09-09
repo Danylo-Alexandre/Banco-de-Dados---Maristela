@@ -1,0 +1,83 @@
+from flask import Flask, request, jsonify #instalar o pip install flask
+from flask_cors import CORS # pip install flask-cors
+import mysql.connector
+from mysql.connector import Error
+import PIL # pip install pillow
+from PIL import Image
+import io
+from datetime import datetime
+
+app = Flask(__name__)
+CORS(app)
+
+def conexao():
+    try:
+        con_BD = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='40028922',
+            database='plataforma_de_vendas_de_jogos_online'
+        )
+        if con_BD.is_connected():
+            print("Conexão bem-sucedida ao MySQL")
+            return con_BD
+    except Error as e:
+        print(f"Erro ao conectar ao MySQL: {e}")
+        return None
+def inserir_usuario(idUsuario, data_nascimento, nome, email, telefone, id_biblioteca, id_perfil_usuario, id_carrinho_compras):
+    con_BD = conexao()
+    if not con_BD:
+        print("Erro na conexão com o banco de dados")
+        return False
+
+    try:
+        cursor = con_BD.cursor()
+        
+        # Gera uma data de cadastro aleatória para testes
+        data_cadastro = "2024-09-09"
+
+        query = """
+        INSERT INTO usuário (idUsuario, Data_Nascimento, Nome, Data_Cadastro, Email, Telefone, ID_Biblioteca, ID_Perfil_Usuário, ID_Carrinho_de_Compras)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        print("Executando query:", query)
+        cursor.execute(query, (idUsuario, data_nascimento, nome, data_cadastro, email, telefone, id_biblioteca, id_perfil_usuario, id_carrinho_compras))
+        con_BD.commit()
+        print("Usuário inserido com sucesso")
+        return True
+    except Error as e:
+        print(f"Erro ao inserir usuário: {e}")
+        return False
+    finally:
+        cursor.close()
+        con_BD.close()
+
+@app.route('/add_usuario', methods=['POST'])
+def add_usuario():
+    try:
+        dados = request.json
+        print("Dados recebidos:", dados)  # Log para verificar os dados recebidos
+        id_usuario = int(dados['id_usuario'])
+        data_nascimento = dados['data_nascimento']
+        nome = dados['nome']
+        email = dados['email']
+        telefone = dados.get('telefone', None)  # 'telefone' pode ser opcional
+        id_biblioteca = int(dados['id_biblioteca'])
+        id_perfil_usuario = int(dados['id_perfil_usuario'])
+        id_carrinho_compras = int(dados['id_carrinho_compras'])
+        
+        print("Chamando função inserir_usuario")
+        sucesso = inserir_usuario(id_usuario, data_nascimento, nome, email, telefone, id_biblioteca, id_perfil_usuario, id_carrinho_compras)
+        
+        if sucesso:
+            print("Usuário cadastrado com sucesso")
+            return jsonify({"message": "Usuário cadastrado com sucesso!"}), 201
+        else:
+            print("Erro ao cadastrar usuário")
+            return jsonify({"message": "Erro ao cadastrar usuário."}), 500
+    except Exception as e:
+        print(f"Erro no endpoint /add_usuario: {e}")
+        return jsonify({"message": f"Erro ao processar a requisição: {e}"}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
