@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Usuários e Mini Loja</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>Gerenciamento de Usuários</h1>
+        <form @submit.prevent="submitForm">
+            <label for="id">ID do Usuário:</label>
+            <input type="number" v-model="form.id" placeholder="ID do Usuário"><br><br>
+
+            <label for="name">Nome:</label>
+            <input type="text" v-model="form.name" placeholder="Nome"><br><br>
+
+            <label for="email">E-mail:</label>
+            <input type="email" v-model="form.email" placeholder="E-mail"><br><br>
+
+            <label for="birthdate">Data de Nascimento:</label>
+            <input type="date" v-model="form.birthdate" placeholder="Data de Nascimento"><br><br>
+
+            <label for="phone">Telefone:</label>
+            <input type="tel" v-model="form.phone" placeholder="Telefone"><br><br>
+
+            <button @click="addUser">Adicionar Usuário</button>
+        </form>
+
+        <h2>Usuários Cadastrados</h2>
+        <button @click="listUsers">Exibir Usuários</button>
+        <div v-for="user in users" :key="user.id">
+            <p>ID: {{ user.id }}, Nome: {{ user.name }}, E-mail: {{ user.email }}, Telefone: {{ user.phone }}</p>
+            <button @click="setForm(user)">Editar</button>
+            <button @click="deleteUser(user.id)">Deletar</button>
+            <button @click="enterStore(user)">Entrar na Loja</button>
+        </div>
+
+        <h2>Mini Loja de Jogos</h2>
+        <div v-if="selectedUser">
+            <h3>Bem-vindo, {{ selectedUser.name }}!</h3>
+            <div v-for="game in games" :key="game.name">
+                <p>{{ game.name }} - Preço: R$ {{ game.price }}</p>
+                <button @click="selectGameToBuy(game)">Comprar</button>
+            </div>
+
+            <h3>Meus Jogos
+                <button @click="getPurchasedGames">Ver Jogos Comprados</button>
+                <div v-for="purchase in purchasedGames" :key="purchase.game_name">
+                    <p>{{ purchase.game_name }} - Preço: R$ {{ purchase.price }}</p>
+                </div>
+
+            <h3>Histórico de Pagamentos</h3>
+            <div v-for="payment in payments" :key="payment.game_name">
+                <p>{{ payment.game_name }} - Preço: R$ {{ payment.amount }} - Tipo: {{ payment.payment_type }} - Data: {{ payment.payment_date }}</p>
+            </div>
+
+    
+            <div v-if="selectedGame" class="payment-form">
+                <h3>Formulário de Pagamento</h3>
+                <p>Jogo: {{ selectedGame.name }} - Preço: R$ {{ selectedGame.price }}</p>
+                <label for="payment_type">Tipo de Pagamento:</label>
+                <select v-model="paymentType">
+                    <option value="PIX">PIX</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Cartão">Cartão</option>
+                </select>
+                <button @click="buyGame">Confirmar Compra</button>
+            </div>
+
+
+
+    
+            <p>{{ message }}</p>
+        </div>
+    
+        <script>
+            new Vue({
+                el: '#app',
+                data() {
+                    return {
+                        form: {
+                            id: null,
+                            name: '',
+                            email: '',
+                            birthdate: '',
+                            phone: ''
+                        },
+                        users: [],
+                        selectedUser: null,  // Usuário que entrou na loja
+                        games: [
+                            { name: 'Jogo 1', price: 50 },
+                            { name: 'Jogo 2', price: 100 },
+                            { name: 'Jogo 3', price: 75 },
+                            { name: 'Jogo 4', price: 120 },
+                            { name: 'Jogo 5', price: 60 }
+                        ],
+                        selectedGame: null,  // Jogo selecionado para compra
+                        paymentType: '',     // Tipo de pagamento selecionado
+                        purchasedGames: [], // Armazenará os jogos comprados
+                        payments: [],       // Armazenará o histórico de pagamentos
+                        message: ''
+                    };
+                },
+                methods: {
+                    async addUser() {
+                        try {
+                            const response = await axios.post('http://localhost:5000/add_user', this.form);
+                            this.message = response.data.message;
+                            this.clearForm();
+                            //this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao adicionar usuário';
+                        }
+                    },
+                    async editUser() {
+                        try {
+                            const response = await axios.put(`http://localhost:5000/edit_user/${this.form.id}`, this.form);
+                            this.message = response.data.message;
+                            this.clearForm();
+                            this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao editar usuário';
+                        }
+                    },
+                    async deleteUser(id) {
+                        try {
+                            const response = await axios.delete(`http://localhost:5000/delete_user/${id}`);
+                            this.message = response.data.message;
+                            this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao deletar usuário';
+                        }
+                    },
+                    async listUsers() {
+                        try {
+                            const response = await axios.get('http://localhost:5000/get_users');
+                            this.users = response.data;
+                        } catch (error) {
+                            this.message = 'Falha ao listar usuários';
+                        }
+                    },
+                    setForm(user) {
+                        this.form = { ...user };
+                    },
+                    clearForm() {
+                        this.form = { id: null, name: '', email: '', birthdate: '', phone: '' };
+                    },
+                    enterStore(user) {
+                        this.selectedUser = user;  // Define o usuário que entrou na loja
+                    },
+                    async selectGameToBuy(game) {
+                        this.selectedGame = game;  // Define o jogo selecionado para compra
+                    },
+                    async buyGame() {
+                        if (!this.selectedGame || !this.paymentType) {
+                            this.message = 'Por favor, selecione um jogo e um tipo de pagamento.';
+                            return;
+                        }
+                        try {
+                            const response = await axios.post('http://localhost:5000/buy_game', {
+                                user_id: this.selectedUser.id,
+                                game_name: this.selectedGame.name,
+                                price: this.selectedGame.price,
+                                payment_type: this.paymentType
+                            });
+                            this.message = response.data.message;
+                            this.selectedGame = null;
+                            this.paymentType = '';
+                            this.getPurchasedGames();  // Atualiza a lista de jogos comprados
+                            this.getPayments();        // Atualiza o histórico de pagamentos
+                        } catch (error) {
+                            this.message = 'Falha ao comprar jogo';
+                        }
+                    },
+                    async getPurchasedGames() {
+                        try {
+                            const response = await axios.get(`http://localhost:5000/get_purchased_games/${this.selectedUser.id}`);
+                            this.purchasedGames = response.data;
+                        } catch (error) {
+                            this.message = 'Falha ao buscar jogos comprados';
+                        }
+                    },
+                    async getPayments() {
+                        try {
+                            const response = await axios.get(`http://localhost:5000/get_payments/${this.selectedUser.id}`);
+                            this.payments = response.data;
+                        } catch (error) {
+                            this.message = 'Falha ao buscar pagamentos';
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+    </html>
+    
