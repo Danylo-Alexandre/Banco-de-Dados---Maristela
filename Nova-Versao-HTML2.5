@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Usuários e Mini Loja</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* Estilo para o modal */
+        .modal {
+            display: none; /* Inicialmente oculto */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+        }
+        .modal.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Gerenciamento de Usuários</h1>
+        <form @submit.prevent="submitForm">
+            <label for="id">ID do Usuário:</label>
+            <input type="number" v-model="form.id" placeholder="ID do Usuário" :disabled="isEdit"><br><br>
+
+            <label for="name">Nome:</label>
+            <input type="text" v-model="form.name" placeholder="Nome"><br><br>
+
+            <label for="email">E-mail:</label>
+            <input type="email" v-model="form.email" placeholder="E-mail"><br><br>
+
+            <label for="birthdate">Data de Nascimento:</label>
+            <input type="date" v-model="form.birthdate" placeholder="Data de Nascimento"><br><br>
+
+            <label for="phone">Telefone:</label>
+            <input type="tel" v-model="form.phone" placeholder="Telefone"><br><br>
+
+            <!-- Botão para adicionar usuário -->
+            <button @click="isEdit ? editUser() : addUser()">
+                {{ isEdit ? 'Salvar Alterações' : 'Adicionar Usuário' }}
+            </button>
+        </form>
+
+        <h2>Usuários Cadastrados</h2>
+        <button @click="listUsers">Exibir Usuários</button>
+        <div v-for="user in users" :key="user.id">
+            <p>ID: {{ user.id }}, Nome: {{ user.name }}, E-mail: {{ user.email }}, Telefone: {{ user.phone }}</p>
+            <button @click="openModal(user)">Editar</button>
+            <button @click="deleteUser(user.id)">Deletar</button>
+        </div>
+
+        <!-- Modal para edição de usuário -->
+        <div class="modal" :class="{ show: showModal }">
+            <div class="modal-content">
+                <h3>Editar Usuário</h3>
+                <form @submit.prevent="editUser">
+                    <label for="id">ID do Usuário:</label>
+                    <input type="number" v-model="form.id" disabled><br><br>
+
+                    <label for="name">Nome:</label>
+                    <input type="text" v-model="form.name" placeholder="Nome"><br><br>
+
+                    <label for="email">E-mail:</label>
+                    <input type="email" v-model="form.email" placeholder="E-mail"><br><br>
+
+                    <label for="birthdate">Data de Nascimento:</label>
+                    <input type="date" v-model="form.birthdate" placeholder="Data de Nascimento"><br><br>
+
+                    <label for="phone">Telefone:</label>
+                    <input type="tel" v-model="form.phone" placeholder="Telefone"><br><br>
+
+                    <button type="submit">Salvar Alterações</button>
+                    <button @click="closeModal" type="button">Cancelar</button>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            new Vue({
+                el: '#app',
+                data() {
+                    return {
+                        form: {
+                            id: null,
+                            name: '',
+                            email: '',
+                            birthdate: '',
+                            phone: ''
+                        },
+                        users: [],
+                        isEdit: false,
+                        showModal: false,  // Controla a exibição do modal
+                    };
+                },
+                methods: {
+                    openModal(user) {
+                        this.setForm(user);
+                        this.isEdit = true;  // Ativa o modo de edição
+                        this.showModal = true;  // Exibe o modal
+                    },
+                    closeModal() {
+                        this.clearForm();
+                        this.showModal = false;  // Oculta o modal
+                    },
+                    async addUser() {
+                        try {
+                            const response = await axios.post('http://localhost:5000/add_user', this.form);
+                            this.message = response.data.message;
+                            this.clearForm();
+                            this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao adicionar usuário';
+                        }
+                    },
+                    async editUser() {
+                        try {
+                            const response = await axios.put(`http://localhost:5000/edit_user/${this.form.id}`, this.form);
+                            this.message = response.data.message;
+                            this.clearForm();
+                            this.isEdit = false;
+                            this.showModal = false;  // Fecha o modal após salvar as alterações
+                            this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao editar usuário';
+                        }
+                    },
+                    async deleteUser(id) {
+                        try {
+                            const response = await axios.delete(`http://localhost:5000/delete_user/${id}`);
+                            this.message = response.data.message;
+                            this.listUsers();  // Atualiza a lista de usuários
+                        } catch (error) {
+                            this.message = 'Falha ao deletar usuário';
+                        }
+                    },
+                    async listUsers() {
+                        try {
+                            const response = await axios.get('http://localhost:5000/get_users');
+                            this.users = response.data;
+                        } catch (error) {
+                            this.message = 'Falha ao listar usuários';
+                        }
+                    },
+                    setForm(user) {
+                        this.form = { ...user };  // Define o formulário com os dados do usuário
+                    },
+                    clearForm() {
+                        this.form = { id: null, name: '', email: '', birthdate: '', phone: '' };
+                        this.isEdit = false;
+                    }
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>
